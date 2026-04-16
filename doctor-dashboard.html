@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediCare — Doctor Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1f2937;
+    --border: rgba(255,255,255,0.08);
+    --accent: #3b82f6;
+    --accent-glow: rgba(59,130,246,0.3);
+    --green: #10b981;
+    --green-glow: rgba(16,185,129,0.25);
+    --red: #ef4444;
+    --red-glow: rgba(239,68,68,0.3);
+    --amber: #f59e0b;
+    --amber-glow: rgba(245,158,11,0.25);
+    --purple: #8b5cf6;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 28px;
+    background: rgba(13,17,23,0.9);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  .logo {
+    font-family: var(--font-head);
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--accent); }
+  .logo-badge {
+    display: inline-block;
+    background: rgba(16,185,129,0.15);
+    border: 1px solid rgba(16,185,129,0.3);
+    color: var(--green);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-left: 8px;
+    vertical-align: middle;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--green);
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.2);
+    padding: 5px 12px;
+    border-radius: 20px;
+  }
+  .live-dot {
+    width: 6px; height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: blink 1.2s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .doc-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #10b981, #059669);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #fff;
+  }
+
+  /* ── LAYOUT ── */
+  .layout {
+    display: flex;
+    padding-top: 64px;
+    min-height: 100vh;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 24px 16px;
+    position: sticky;
+    top: 64px;
+    height: calc(100vh - 64px);
+    overflow-y: auto;
+  }
+
+  .sidebar-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 20px 0 8px;
+    padding: 0 8px;
+  }
+  .sidebar-label:first-child { margin-top: 0; }
+
+  .sidebar-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.18s;
+    margin-bottom: 2px;
+  }
+  .sidebar-btn:hover { background: var(--surface2); color: var(--text); }
+  .sidebar-btn.active { background: rgba(59,130,246,0.15); color: var(--accent); }
+  .sidebar-btn .sb-icon { font-size: 16px; width: 20px; text-align: center; }
+  .sidebar-btn .sb-badge {
+    margin-left: auto;
+    background: var(--red);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 10px;
+    min-width: 18px;
+    text-align: center;
+  }
+  .sb-badge.green { background: var(--green); }
+  .sb-badge.amber { background: var(--amber); }
+
+  /* Patient pills in sidebar */
+  .patient-pills { margin-top: 4px; }
+  .patient-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.18s;
+    margin-bottom: 2px;
+  }
+  .patient-pill:hover { background: var(--surface2); }
+  .patient-pill.selected { background: rgba(59,130,246,0.1); }
+  .pp-avatar {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+  }
+  .pp-name { font-size: 13px; font-weight: 500; }
+  .pp-status { margin-left: auto; font-size: 10px; }
+
+  /* ── MAIN ── */
+  .main { flex: 1; padding: 24px; overflow-x: hidden; }
+
+  /* ── PAGE HEADER ── */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .page-title {
+    font-family: var(--font-head);
+    font-size: 24px;
+    font-weight: 800;
+  }
+  .page-sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+
+  .header-actions { display: flex; gap: 8px; }
+  .btn {
+    padding: 9px 16px;
+    border-radius: 9px;
+    border: none;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 0 16px var(--accent-glow); }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 0 24px var(--accent-glow); }
+  .btn-ghost {
+    background: var(--surface2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
+
+  /* ── STAT ROW ── */
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    transition: border-color 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 14px 14px 0 0;
+  }
+  .stat-card.blue::after { background: var(--accent); }
+  .stat-card.green::after { background: var(--green); }
+  .stat-card.red::after   { background: var(--red); }
+  .stat-card.amber::after { background: var(--amber); }
+
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; }
+  .stat-val {
+    font-family: var(--font-head);
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1;
+    margin: 8px 0 4px;
+  }
+  .stat-trend { font-size: 11px; color: var(--muted); }
+  .stat-trend.up { color: var(--green); }
+  .stat-trend.down { color: var(--red); }
+
+  /* ── GRID ── */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: rgba(255,255,255,0.12); }
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-family: var(--font-head);
+    font-size: 14px;
+    font-weight: 700;
+    display: flex; align-items: center; gap: 7px;
+  }
+
+  /* ── PATIENT TABLE ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left;
+    padding: 10px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr {
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.15s;
+    cursor: pointer;
+  }
+  tbody tr:hover { background: rgba(255,255,255,0.03); }
+  tbody tr.selected-row { background: rgba(59,130,246,0.08); }
+  tbody td { padding: 12px 12px; font-size: 13px; }
+
+  .patient-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .patient-av {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+  }
+  .patient-name { font-weight: 600; font-size: 13px; }
+  .patient-age  { font-size: 11px; color: var(--muted); }
+
+  .status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge-ok     { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+  .badge-warn   { background: rgba(245,158,11,0.15); color: var(--amber); border: 1px solid rgba(245,158,11,0.3); }
+  .badge-alert  { background: rgba(239,68,68,0.15);  color: var(--red);   border: 1px solid rgba(239,68,68,0.3); }
+  .badge-new    { background: rgba(59,130,246,0.15); color: var(--accent); border: 1px solid rgba(59,130,246,0.3); }
+
+  .compliance-bar {
+    width: 80px;
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  .compliance-fill { height: 100%; border-radius: 3px; }
+
+  .action-btns { display: flex; gap: 6px; }
+  .action-btn {
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+  .action-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
+  .action-btn.danger { color: var(--red); border-color: rgba(239,68,68,0.3); }
+  .action-btn.danger:hover { background: rgba(239,68,68,0.1); }
+
+  /* ── ALERT FEED ── */
+  .alert-feed { display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto; }
+  .alert-item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  .alert-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+  .alert-dot.red   { background: var(--red);   box-shadow: 0 0 8px var(--red-glow); }
+  .alert-dot.amber { background: var(--amber);  box-shadow: 0 0 8px var(--amber-glow); }
+  .alert-dot.green { background: var(--green);  box-shadow: 0 0 8px var(--green-glow); }
+  .alert-dot.blue  { background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
+  .alert-text { font-size: 13px; line-height: 1.4; }
+  .alert-time { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* ── MINI CHARTS (CSS-only sparklines) ── */
+  .chart-wrap { margin-top: 8px; }
+  .bar-chart { display: flex; align-items: flex-end; gap: 4px; height: 60px; }
+  .bar {
+    flex: 1;
+    border-radius: 3px 3px 0 0;
+    transition: opacity 0.2s;
+    position: relative;
+  }
+  .bar:hover { opacity: 0.8; }
+  .bar-label { font-size: 9px; color: var(--muted); text-align: center; margin-top: 4px; }
+  .bar-labels { display: flex; gap: 4px; }
+  .bar-labels > div { flex: 1; text-align: center; font-size: 9px; color: var(--muted); }
+
+  /* ── MEDICATION ADHERENCE RING ── */
+  .rings { display: flex; gap: 12px; flex-wrap: wrap; }
+  .ring-item { text-align: center; }
+  .ring-svg { width: 72px; height: 72px; }
+  .ring-val { font-family: var(--font-head); font-size: 14px; font-weight: 800; }
+  .ring-name { font-size: 11px; color: var(--muted); margin-top: 2px; max-width: 72px; }
+
+  /* ── PATIENT DETAIL PANEL ── */
+  .detail-panel {
+    display: none;
+    position: fixed;
+    top: 64px; right: 0; bottom: 0;
+    width: 360px;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    z-index: 50;
+    overflow-y: auto;
+    animation: slideIn 0.25s ease;
+  }
+  .detail-panel.open { display: block; }
+  @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+  .detail-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .close-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .close-btn:hover { color: var(--text); }
+  .detail-body { padding: 20px; }
+  .detail-section { margin-bottom: 22px; }
+  .detail-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    margin-bottom: 10px;
+  }
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 13px;
+  }
+  .info-label { color: var(--muted); }
+  .info-val { font-weight: 600; }
+
+  /* Med detail list */
+  .med-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    background: var(--surface2);
+    border-radius: 9px;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .med-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Notes textarea */
+  .note-area {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 13px;
+    resize: vertical;
+    outline: none;
+    min-height: 80px;
+    transition: border-color 0.2s;
+  }
+  .note-area:focus { border-color: var(--accent); }
+  .save-note-btn {
+    margin-top: 8px;
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* Modal for adding prescription */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 28px;
+    width: 440px;
+    max-width: 90vw;
+    animation: popIn 0.25s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal-title { font-family: var(--font-head); font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+  .modal-sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+  .modal-field { margin-bottom: 14px; }
+  .modal-field label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .modal-field input, .modal-field select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 13px;
+    outline: none;
+  }
+  .modal-field select option { background: var(--surface2); }
+  .modal-field input:focus, .modal-field select:focus { border-color: var(--accent); }
+  .modal-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+  @media (max-width: 768px) {
+    .stat-row { grid-template-columns: 1fr 1fr; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .detail-panel { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div>
+    <span class="logo">Medi<span>Care</span></span>
+    <span class="logo-badge">Doctor Portal</span>
+  </div>
+  <div class="nav-right">
+    <div class="live-indicator">
+      <div class="live-dot"></div>
+      Live Monitoring
+    </div>
+    <div class="doc-badge">
+      <div class="avatar">DR</div>
+      Dr. Ramesh, MD
+    </div>
+  </div>
+</nav>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-label">Navigation</div>
+    <button class="sidebar-btn active" onclick="setTab(this)">
+      <span class="sb-icon">🏠</span> Overview
+    </button>
+    <button class="sidebar-btn" onclick="setTab(this)">
+      <span class="sb-icon">👥</span> All Patients
+      <span class="sb-badge green">12</span>
+    </button>
+    <button class="sidebar-btn" onclick="setTab(this)">
+      <span class="sb-icon">🚨</span> Alerts
+      <span class="sb-badge">2</span>
+    </button>
+    <button class="sidebar-btn" onclick="setTab(this)">
+      <span class="sb-icon">📋</span> Prescriptions
+    </button>
+    <button class="sidebar-btn" onclick="setTab(this)">
+      <span class="sb-icon">📈</span> Reports
+    </button>
+
+    <div class="sidebar-label">My Patients</div>
+    <div class="patient-pills" id="sidebarPatients"></div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+      <div>
+        <div class="page-title">Patient Overview</div>
+        <div class="page-sub">Last updated: <span id="lastUpdate">—</span></div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-ghost" onclick="refreshAll()">↻ Refresh</button>
+        <button class="btn btn-primary" onclick="openAddModal()">+ New Patient</button>
+      </div>
+    </div>
+
+    <!-- STAT ROW -->
+    <div class="stat-row">
+      <div class="stat-card blue">
+        <div class="stat-label">Total Patients</div>
+        <div class="stat-val" id="totalPatients">0</div>
+        <div class="stat-trend up">↑ 2 this week</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">Compliant Today</div>
+        <div class="stat-val" id="compliantCount">0</div>
+        <div class="stat-trend up" id="compliantPct">—</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-label">Missed Doses</div>
+        <div class="stat-val" id="missedCount">0</div>
+        <div class="stat-trend">across all patients</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-label">Active Alerts</div>
+        <div class="stat-val" id="alertCount">0</div>
+        <div class="stat-trend down" id="alertSub">—</div>
+      </div>
+    </div>
+
+    <!-- PATIENT TABLE + ALERT FEED -->
+    <div class="grid-3">
+
+      <!-- Patient Table -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🧑‍⚕️ Patient Monitoring</div>
+          <input type="text" placeholder="Search..." id="searchInput" oninput="filterTable()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-size:12px;outline:none;width:140px;">
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Patient</th>
+                <th>Condition</th>
+                <th>Compliance</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="patientTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Alerts Feed -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🔔 Live Alerts</div>
+          <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px" onclick="clearAlerts()">Clear</button>
+        </div>
+        <div class="alert-feed" id="alertFeed"></div>
+      </div>
+    </div>
+
+    <!-- ADHERENCE CHART + RING -->
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📊 Weekly Compliance (All Patients)</div>
+        </div>
+        <div class="chart-wrap">
+          <div class="bar-chart" id="barChart"></div>
+          <div class="bar-labels" id="barLabels"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">💊 Medication Adherence</div>
+        </div>
+        <div class="rings" id="ringsArea"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- PATIENT DETAIL PANEL -->
+<div class="detail-panel" id="detailPanel">
+  <div class="detail-header">
+    <div>
+      <div style="font-family:var(--font-head);font-weight:800;font-size:16px" id="detailName">—</div>
+      <div style="font-size:12px;color:var(--muted)" id="detailSub">—</div>
+    </div>
+    <button class="close-btn" onclick="closeDetail()">✕</button>
+  </div>
+  <div class="detail-body">
+    <div class="detail-section">
+      <div class="detail-section-title">Patient Info</div>
+      <div id="detailInfo"></div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Current Medications</div>
+      <div id="detailMeds"></div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Doctor Notes</div>
+      <textarea class="note-area" id="noteArea" placeholder="Add notes for this patient..."></textarea>
+      <button class="save-note-btn" onclick="saveNote()">Save Note</button>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Quick Actions</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" style="font-size:12px" onclick="sendAlert()">📢 Send Alert</button>
+        <button class="btn btn-ghost" style="font-size:12px" onclick="openAddModal()">+ Prescribe</button>
+        <button class="btn btn-ghost" style="font-size:12px;color:var(--red)" onclick="flagPatient()">⚠️ Flag</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD PATIENT MODAL -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-title">Add New Patient</div>
+    <div class="modal-sub">Register a patient to your monitoring list</div>
+    <div class="modal-field">
+      <label>Full Name</label>
+      <input type="text" id="newName" placeholder="e.g. Priya Sharma" />
+    </div>
+    <div class="modal-field">
+      <label>Age</label>
+      <input type="number" id="newAge" placeholder="e.g. 45" />
+    </div>
+    <div class="modal-field">
+      <label>Condition</label>
+      <input type="text" id="newCondition" placeholder="e.g. Hypertension, Diabetes" />
+    </div>
+    <div class="modal-field">
+      <label>Risk Level</label>
+      <select id="newRisk">
+        <option value="ok">Low Risk</option>
+        <option value="warn">Medium Risk</option>
+        <option value="alert">High Risk</option>
+      </select>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="addPatient()">Add Patient</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── DATA ──
+  const COLORS = [
+    'linear-gradient(135deg,#3b82f6,#8b5cf6)',
+    'linear-gradient(135deg,#10b981,#059669)',
+    'linear-gradient(135deg,#f59e0b,#ef4444)',
+    'linear-gradient(135deg,#8b5cf6,#ec4899)',
+    'linear-gradient(135deg,#06b6d4,#3b82f6)',
+    'linear-gradient(135deg,#f97316,#eab308)',
+  ];
+
+  let patients = [
+    { id:1, name:'Arjun Kumar',    age:62, condition:'Hypertension',     risk:'alert', compliance:52, meds:['Amlodipine 5mg','Metoprolol 50mg'],   notes:'' },
+    { id:2, name:'Priya Sharma',   age:45, condition:'Type 2 Diabetes',  risk:'warn',  compliance:78, meds:['Metformin 500mg','Glipizide 5mg'],     notes:'' },
+    { id:3, name:'Ravi Nair',      age:55, condition:'Asthma',           risk:'ok',    compliance:94, meds:['Salbutamol Inhaler','Fluticasone'],     notes:'' },
+    { id:4, name:'Meena Iyer',     age:38, condition:'Thyroid Disorder', risk:'ok',    compliance:88, meds:['Levothyroxine 50mcg'],                  notes:'' },
+    { id:5, name:'Suresh Pillai',  age:70, condition:'Cardiac Arrhythmia',risk:'alert',compliance:41, meds:['Digoxin 0.25mg','Warfarin 5mg','Aspirin 75mg'], notes:'' },
+    { id:6, name:'Ananya Menon',   age:29, condition:'Epilepsy',         risk:'warn',  compliance:71, meds:['Levetiracetam 500mg'],                  notes:'' },
+  ];
+
+  let alerts = [
+    { color:'red',   text:'🚨 Suresh Pillai missed Warfarin dose — 3 hrs overdue',    time:'2 min ago' },
+    { color:'red',   text:'🚨 Arjun Kumar: possible overdose — Amlodipine taken 3×',  time:'8 min ago' },
+    { color:'amber', text:'⚠️ Priya Sharma: Metformin taken 45 min late',             time:'22 min ago' },
+    { color:'amber', text:'⚠️ Ananya Menon: missed morning dose of Levetiracetam',    time:'1 hr ago' },
+    { color:'green', text:'✅ Ravi Nair: all medications on schedule',                 time:'1 hr ago' },
+    { color:'blue',  text:'💊 Meena Iyer: Levothyroxine taken on time',               time:'2 hr ago' },
+  ];
+
+  let selectedPatient = null;
+
+  // ── RENDER ──
+  function renderAll() {
+    document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+    renderStats();
+    renderTable(patients);
+    renderSidebar();
+    renderAlerts();
+    renderBarChart();
+    renderRings();
+  }
+
+  function renderStats() {
+    document.getElementById('totalPatients').textContent = patients.length;
+    const compliant = patients.filter(p => p.compliance >= 80).length;
+    document.getElementById('compliantCount').textContent = compliant;
+    document.getElementById('compliantPct').textContent = Math.round(compliant/patients.length*100) + '% compliance rate';
+    const missed = patients.filter(p => p.compliance < 70).length;
+    document.getElementById('missedCount').textContent = missed;
+    const alertPts = patients.filter(p => p.risk === 'alert').length;
+    document.getElementById('alertCount').textContent = alertPts;
+    document.getElementById('alertSub').textContent = alertPts + ' high-risk patient' + (alertPts!==1?'s':'');
+  }
+
+  function renderTable(list) {
+    const body = document.getElementById('patientTableBody');
+    body.innerHTML = list.map((p, i) => {
+      const color = COLORS[i % COLORS.length];
+      const compColor = p.compliance >= 80 ? 'var(--green)' : p.compliance >= 60 ? 'var(--amber)' : 'var(--red)';
+      const initials = p.name.split(' ').map(w=>w[0]).join('').slice(0,2);
+      const badgeClass = p.risk === 'ok' ? 'badge-ok' : p.risk === 'warn' ? 'badge-warn' : 'badge-alert';
+      const badgeText = p.risk === 'ok' ? '✅ Stable' : p.risk === 'warn' ? '⚠️ Monitor' : '🚨 Critical';
+      return `<tr onclick="openDetail(${p.id})" ${selectedPatient===p.id?'class="selected-row"':''}>
+        <td><div class="patient-cell">
+          <div class="patient-av" style="background:${color}">${initials}</div>
+          <div><div class="patient-name">${p.name}</div><div class="patient-age">Age ${p.age}</div></div>
+        </div></td>
+        <td style="color:var(--muted);font-size:12px">${p.condition}</td>
+        <td>
+          <div class="compliance-bar"><div class="compliance-fill" style="width:${p.compliance}%;background:${compColor}"></div></div>
+          <span style="font-size:12px;color:${compColor};font-weight:600">${p.compliance}%</span>
+        </td>
+        <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
+        <td><div class="action-btns">
+          <button class="action-btn" onclick="event.stopPropagation();openDetail(${p.id})">View</button>
+          <button class="action-btn danger" onclick="event.stopPropagation();removePatient(${p.id})">Remove</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderSidebar() {
+    const el = document.getElementById('sidebarPatients');
+    el.innerHTML = patients.map((p, i) => {
+      const color = COLORS[i % COLORS.length];
+      const initials = p.name.split(' ').map(w=>w[0]).join('').slice(0,2);
+      const emoji = p.risk === 'ok' ? '🟢' : p.risk === 'warn' ? '🟡' : '🔴';
+      return `<div class="patient-pill ${selectedPatient===p.id?'selected':''}" onclick="openDetail(${p.id})">
+        <div class="pp-avatar" style="background:${color}">${initials}</div>
+        <div class="pp-name">${p.name.split(' ')[0]}</div>
+        <div class="pp-status">${emoji}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderAlerts() {
+    document.getElementById('alertFeed').innerHTML = alerts.map(a => `
+      <div class="alert-item">
+        <div class="alert-dot ${a.color}"></div>
+        <div>
+          <div class="alert-text">${a.text}</div>
+          <div class="alert-time">${a.time}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  function renderBarChart() {
+    const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const vals = [72, 85, 68, 91, 77, 83, 79];
+    const max = Math.max(...vals);
+    document.getElementById('barChart').innerHTML = vals.map((v,i) => {
+      const h = Math.round((v/max)*56);
+      const col = v >= 85 ? 'var(--green)' : v >= 70 ? 'var(--accent)' : 'var(--amber)';
+      return `<div class="bar" style="height:${h}px;background:${col};opacity:0.85" title="${days[i]}: ${v}%"></div>`;
+    }).join('');
+    document.getElementById('barLabels').innerHTML = days.map(d => `<div>${d}</div>`).join('');
+  }
+
+  function renderRings() {
+    const meds = [
+      { name: 'Metformin',    pct: 82, color: '#10b981' },
+      { name: 'Amlodipine',   pct: 56, color: '#ef4444' },
+      { name: 'Levothyroxine',pct: 91, color: '#3b82f6' },
+      { name: 'Warfarin',     pct: 44, color: '#f59e0b' },
+    ];
+    const r = 28, c = 36, circ = 2 * Math.PI * r;
+    document.getElementById('ringsArea').innerHTML = meds.map(m => {
+      const dash = (m.pct / 100) * circ;
+      return `<div class="ring-item">
+        <svg class="ring-svg" viewBox="0 0 72 72">
+          <circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="7"/>
+          <circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="${m.color}" stroke-width="7"
+            stroke-dasharray="${dash} ${circ}" stroke-dashoffset="${circ/4}" stroke-linecap="round"/>
+          <text x="${c}" y="${c}" text-anchor="middle" dominant-baseline="central"
+            font-family="Syne,sans-serif" font-size="12" font-weight="800" fill="${m.color}">${m.pct}%</text>
+        </svg>
+        <div class="ring-val" style="color:${m.color}">${m.pct}%</div>
+        <div class="ring-name">${m.name}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── DETAIL PANEL ──
+  function openDetail(id) {
+    const p = patients.find(x => x.id === id);
+    if (!p) return;
+    selectedPatient = id;
+    renderTable(patients);
+    renderSidebar();
+
+    document.getElementById('detailName').textContent = p.name;
+    document.getElementById('detailSub').textContent = `${p.condition} · Age ${p.age}`;
+    document.getElementById('noteArea').value = p.notes || '';
+
+    const riskLabel = p.risk === 'ok' ? '✅ Stable' : p.risk === 'warn' ? '⚠️ Monitor' : '🚨 Critical';
+    document.getElementById('detailInfo').innerHTML = `
+      <div class="info-row"><span class="info-label">Age</span><span class="info-val">${p.age}</span></div>
+      <div class="info-row"><span class="info-label">Condition</span><span class="info-val">${p.condition}</span></div>
+      <div class="info-row"><span class="info-label">Compliance</span><span class="info-val" style="color:${p.compliance>=80?'var(--green)':p.compliance>=60?'var(--amber)':'var(--red)'}">${p.compliance}%</span></div>
+      <div class="info-row"><span class="info-label">Risk Level</span><span class="info-val">${riskLabel}</span></div>
+    `;
+
+    document.getElementById('detailMeds').innerHTML = p.meds.map((m, i) => {
+      const cols = ['#3b82f6','#10b981','#f59e0b','#8b5cf6'];
+      return `<div class="med-row"><div class="med-dot" style="background:${cols[i%cols.length]}"></div>${m}</div>`;
+    }).join('');
+
+    document.getElementById('detailPanel').classList.add('open');
+  }
+
+  function closeDetail() {
+    document.getElementById('detailPanel').classList.remove('open');
+    selectedPatient = null;
+    renderTable(patients);
+    renderSidebar();
+  }
+
+  function saveNote() {
+    const p = patients.find(x => x.id === selectedPatient);
+    if (p) {
+      p.notes = document.getElementById('noteArea').value;
+      addAlert('blue', `📝 Note saved for ${p.name}`);
+    }
+  }
+
+  function sendAlert() {
+    const p = patients.find(x => x.id === selectedPatient);
+    if (p) addAlert('amber', `📢 Alert sent to ${p.name}`);
+  }
+
+  function flagPatient() {
+    const p = patients.find(x => x.id === selectedPatient);
+    if (p) { p.risk = 'alert'; renderAll(); addAlert('red', `⚠️ ${p.name} flagged as high risk`); }
+  }
+
+  // ── ADD / REMOVE ──
+  function openAddModal() { document.getElementById('addModal').classList.add('show'); }
+  function closeModal()   { document.getElementById('addModal').classList.remove('show'); }
+
+  function addPatient() {
+    const name = document.getElementById('newName').value.trim();
+    const age  = parseInt(document.getElementById('newAge').value) || 0;
+    const cond = document.getElementById('newCondition').value.trim();
+    const risk = document.getElementById('newRisk').value;
+    if (!name) { alert('Please enter a name.'); return; }
+    patients.push({ id: Date.now(), name, age, condition: cond || 'General', risk, compliance: 100, meds: [], notes: '' });
+    addAlert('blue', `🆕 ${name} added to your patient list`);
+    renderAll();
+    closeModal();
+    ['newName','newAge','newCondition'].forEach(id => document.getElementById(id).value = '');
+  }
+
+  function removePatient(id) {
+    const p = patients.find(x => x.id === id);
+    if (!confirm(`Remove ${p?.name} from monitoring?`)) return;
+    patients = patients.filter(x => x.id !== id);
+    if (selectedPatient === id) closeDetail();
+    addAlert('amber', `🗑️ ${p.name} removed from monitoring`);
+    renderAll();
+  }
+
+  // ── UTILS ──
+  function addAlert(color, text) {
+    alerts.unshift({ color, text, time: 'Just now' });
+    renderAlerts();
+  }
+
+  function clearAlerts() { alerts = []; renderAlerts(); }
+
+  function filterTable() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    renderTable(patients.filter(p => p.name.toLowerCase().includes(q) || p.condition.toLowerCase().includes(q)));
+  }
+
+  function refreshAll() { renderAll(); }
+
+  function setTab(btn) {
+    document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  // ── AUTO REFRESH ──
+  setInterval(() => {
+    // Simulate small compliance fluctuations
+    patients.forEach(p => {
+      const delta = Math.floor(Math.random()*3) - 1;
+      p.compliance = Math.min(100, Math.max(20, p.compliance + delta));
+    });
+    renderAll();
+  }, 15000);
+
+  // ── INIT ──
+  renderAll();
+</script>
+</body>
+</html>
