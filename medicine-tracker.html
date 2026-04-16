@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediCare — Smart Medicine Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1f2937;
+    --border: rgba(255,255,255,0.08);
+    --accent: #3b82f6;
+    --accent-glow: rgba(59,130,246,0.3);
+    --green: #10b981;
+    --green-glow: rgba(16,185,129,0.25);
+    --red: #ef4444;
+    --red-glow: rgba(239,68,68,0.3);
+    --amber: #f59e0b;
+    --amber-glow: rgba(245,158,11,0.25);
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── TOP NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px;
+    background: rgba(13,17,23,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: var(--font-head);
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+  .logo span { color: var(--accent); }
+
+  .nav-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px;
+  }
+
+  .nav-tab {
+    padding: 8px 18px;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .nav-tab.active {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 0 18px var(--accent-glow);
+  }
+  .nav-tab:hover:not(.active) { color: var(--text); background: var(--surface2); }
+
+  .user-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600;
+    color: #fff;
+  }
+  .av-patient { background: linear-gradient(135deg, #3b82f6, #8b5cf6); }
+  .av-doctor  { background: linear-gradient(135deg, #10b981, #059669); }
+  .av-family  { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+
+  /* ── PAGES ── */
+  .page { display: none; padding-top: 80px; min-height: 100vh; position: relative; z-index: 1; }
+  .page.active { display: block; }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+
+  /* ── HERO SECTION ── */
+  .hero {
+    text-align: center;
+    padding: 40px 0 32px;
+  }
+  .hero h1 {
+    font-family: var(--font-head);
+    font-size: clamp(32px, 6vw, 52px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 12px;
+  }
+  .hero h1 span { color: var(--accent); }
+  .hero p { color: var(--muted); font-size: 16px; max-width: 480px; margin: 0 auto 28px; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: rgba(255,255,255,0.15); }
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .card-title {
+    font-family: var(--font-head);
+    font-size: 16px;
+    font-weight: 700;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .icon { font-size: 18px; }
+
+  /* ── MEDICINE LIST ── */
+  .med-list { display: flex; flex-direction: column; gap: 12px; }
+
+  .med-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .med-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    border-radius: 3px 0 0 3px;
+    transition: background 0.3s;
+  }
+  .med-item.taken::before { background: var(--green); }
+  .med-item.overdue::before { background: var(--red); animation: pulse-bar 1.5s ease-in-out infinite; }
+  .med-item.warning::before { background: var(--amber); }
+
+  @keyframes pulse-bar {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .med-pill-icon {
+    width: 42px; height: 42px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    background: rgba(59,130,246,0.12);
+    flex-shrink: 0;
+  }
+  .med-item.taken .med-pill-icon { background: rgba(16,185,129,0.12); }
+  .med-item.overdue .med-pill-icon { background: rgba(239,68,68,0.12); }
+
+  .med-info { flex: 1; }
+  .med-name { font-weight: 600; font-size: 15px; }
+  .med-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .med-count { text-align: center; min-width: 60px; }
+  .count-num {
+    font-family: var(--font-head);
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .count-label { font-size: 11px; color: var(--muted); }
+
+  .take-btn {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: none;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s;
+    white-space: nowrap;
+  }
+  .take-btn.pending {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 0 14px var(--accent-glow);
+  }
+  .take-btn.pending:hover { transform: scale(1.04); box-shadow: 0 0 22px var(--accent-glow); }
+  .take-btn.done {
+    background: rgba(16,185,129,0.15);
+    color: var(--green);
+    border: 1px solid rgba(16,185,129,0.3);
+    cursor: default;
+  }
+
+  /* ── ADD MEDICINE FORM ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 13px; color: var(--muted); font-weight: 500; }
+  input, select {
+    padding: 10px 14px;
+    border-radius: 9px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 14px;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+  input:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  select option { background: var(--surface2); }
+
+  .btn-primary {
+    padding: 11px 24px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s;
+    box-shadow: 0 0 18px var(--accent-glow);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 24px var(--accent-glow); }
+  .btn-danger {
+    background: rgba(239,68,68,0.15);
+    color: var(--red);
+    border: 1px solid rgba(239,68,68,0.3);
+    padding: 6px 12px;
+    border-radius: 7px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--font-body);
+    transition: all 0.15s;
+  }
+  .btn-danger:hover { background: rgba(239,68,68,0.25); }
+
+  /* ── STATS ROW ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    text-align: center;
+  }
+  .stat-num {
+    font-family: var(--font-head);
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .stat-card.good .stat-num  { color: var(--green); }
+  .stat-card.warn .stat-num  { color: var(--amber); }
+  .stat-card.bad  .stat-num  { color: var(--red); }
+
+  /* ── ALERT BANNER ── */
+  .alert-banner {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    font-weight: 500;
+    animation: slide-in 0.3s ease;
+  }
+  .alert-banner.show { display: flex; }
+  .alert-banner.danger {
+    background: rgba(239,68,68,0.12);
+    border: 1px solid rgba(239,68,68,0.35);
+    color: #fca5a5;
+  }
+  .alert-banner.warning {
+    background: rgba(245,158,11,0.12);
+    border: 1px solid rgba(245,158,11,0.35);
+    color: #fcd34d;
+  }
+  .alert-banner.success {
+    background: rgba(16,185,129,0.12);
+    border: 1px solid rgba(16,185,129,0.35);
+    color: #6ee7b7;
+  }
+
+  @keyframes slide-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── PORTAL TABLE ── */
+  .portal-table { width: 100%; border-collapse: collapse; }
+  .portal-table th {
+    text-align: left;
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .portal-table td {
+    padding: 12px;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    vertical-align: middle;
+  }
+  .portal-table tr:last-child td { border-bottom: none; }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .badge-taken   { background: rgba(16,185,129,0.15);  color: var(--green); }
+  .badge-pending { background: rgba(59,130,246,0.12);   color: #93c5fd; }
+  .badge-overdue { background: rgba(239,68,68,0.12);    color: var(--red); animation: blink 1.8s ease-in-out infinite; }
+  .badge-warning { background: rgba(245,158,11,0.12);   color: var(--amber); }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+  /* ── ALARM MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(6px);
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid rgba(59,130,246,0.4);
+    border-radius: 20px;
+    padding: 36px 40px;
+    text-align: center;
+    max-width: 380px;
+    width: 90%;
+    box-shadow: 0 0 60px rgba(59,130,246,0.2);
+    animation: pop-in 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .modal.danger-modal {
+    border-color: rgba(239,68,68,0.5);
+    box-shadow: 0 0 60px rgba(239,68,68,0.25);
+  }
+  @keyframes pop-in {
+    from { opacity: 0; transform: scale(0.8); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  .modal-icon { font-size: 52px; margin-bottom: 16px; }
+  .modal h2 {
+    font-family: var(--font-head);
+    font-size: 22px;
+    margin-bottom: 8px;
+  }
+  .modal p { color: var(--muted); font-size: 14px; line-height: 1.6; margin-bottom: 24px; }
+  .modal-actions { display: flex; gap: 10px; justify-content: center; }
+
+  /* ── ALARM RING ANIMATION ── */
+  .alarm-ring {
+    width: 90px; height: 90px;
+    border-radius: 50%;
+    background: rgba(59,130,246,0.15);
+    border: 2px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+    margin: 0 auto 20px;
+    animation: ring 1s ease-in-out infinite;
+    box-shadow: 0 0 0 0 var(--accent-glow);
+  }
+  .alarm-ring.danger-ring {
+    background: rgba(239,68,68,0.15);
+    border-color: var(--red);
+    box-shadow: 0 0 0 0 var(--red-glow);
+    animation: ring-danger 1s ease-in-out infinite;
+  }
+  @keyframes ring {
+    0%   { box-shadow: 0 0 0 0 var(--accent-glow); transform: rotate(-5deg); }
+    25%  { transform: rotate(5deg); }
+    50%  { box-shadow: 0 0 0 18px rgba(59,130,246,0); }
+    100% { transform: rotate(-5deg); }
+  }
+  @keyframes ring-danger {
+    0%   { box-shadow: 0 0 0 0 var(--red-glow); transform: scale(1); }
+    50%  { box-shadow: 0 0 0 20px rgba(239,68,68,0); transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+
+  /* ── NOTIFICATION LOG ── */
+  .notif-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .notif-item:last-child { border-bottom: none; }
+  .notif-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+  .notif-dot.green { background: var(--green); box-shadow: 0 0 6px var(--green-glow); }
+  .notif-dot.red   { background: var(--red);   box-shadow: 0 0 6px var(--red-glow); }
+  .notif-dot.amber { background: var(--amber);  box-shadow: 0 0 6px var(--amber-glow); }
+  .notif-dot.blue  { background: var(--accent); box-shadow: 0 0 6px var(--accent-glow); }
+  .notif-text { font-size: 14px; line-height: 1.5; }
+  .notif-time { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* ── SCHEDULE TIMELINE ── */
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+  .tl-item {
+    display: flex; align-items: flex-start; gap: 16px;
+    position: relative; padding-bottom: 20px;
+  }
+  .tl-item:last-child { padding-bottom: 0; }
+  .tl-line {
+    position: absolute; left: 17px; top: 36px; bottom: 0;
+    width: 1px; background: var(--border);
+  }
+  .tl-item:last-child .tl-line { display: none; }
+  .tl-dot {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+    border: 2px solid var(--border);
+    background: var(--surface2);
+    position: relative; z-index: 1;
+  }
+  .tl-dot.done { border-color: var(--green); background: rgba(16,185,129,0.15); }
+  .tl-dot.active { border-color: var(--accent); background: rgba(59,130,246,0.15); animation: pulse-dot 2s ease-in-out infinite; }
+  .tl-dot.missed { border-color: var(--red); background: rgba(239,68,68,0.15); }
+  @keyframes pulse-dot {
+    0%,100% { box-shadow: 0 0 0 0 var(--accent-glow); }
+    50%      { box-shadow: 0 0 0 8px rgba(59,130,246,0); }
+  }
+  .tl-content { padding-top: 6px; }
+  .tl-time { font-size: 12px; color: var(--muted); }
+  .tl-med { font-size: 14px; font-weight: 500; margin-top: 2px; }
+
+  /* ── PORTAL HEADER ── */
+  .portal-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 20px;
+    background: rgba(16,185,129,0.07);
+    border: 1px solid rgba(16,185,129,0.2);
+    border-radius: 12px;
+    margin-bottom: 20px;
+  }
+  .portal-header h3 { font-family: var(--font-head); font-size: 17px; font-weight: 700; }
+  .portal-header p { font-size: 13px; color: var(--muted); }
+
+  /* ── SECTION LABEL ── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+
+  /* ── OVERDOSE WARNING PANEL ── */
+  .overdose-panel {
+    background: rgba(239,68,68,0.07);
+    border: 1px solid rgba(239,68,68,0.25);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .overdose-panel h4 {
+    font-family: var(--font-head);
+    font-size: 15px;
+    color: var(--red);
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  /* ── LOGIN SCREEN ── */
+  .login-wrap {
+    max-width: 420px;
+    margin: 60px auto;
+    padding: 0 20px;
+  }
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 36px;
+  }
+  .role-selector {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .role-btn {
+    padding: 14px 8px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.18s;
+  }
+  .role-btn .role-icon { font-size: 24px; display: block; margin-bottom: 6px; }
+  .role-btn.selected {
+    border-color: var(--accent);
+    background: rgba(59,130,246,0.12);
+    color: var(--text);
+    box-shadow: 0 0 14px var(--accent-glow);
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
+
+  /* responsive */
+  @media(max-width: 600px) {
+    nav { padding: 12px 16px; }
+    .nav-tabs { display: none; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════ NAV ══════════════ -->
+<nav>
+  <div class="logo">Medi<span>Care</span></div>
+  <div class="nav-tabs" id="mainTabs">
+    <button class="nav-tab active" onclick="switchPage('patient')">💊 Patient</button>
+    <button class="nav-tab" onclick="switchPage('portal')">🩺 Portal</button>
+    <button class="nav-tab" onclick="switchPage('schedule')">📅 Schedule</button>
+    <button class="nav-tab" onclick="switchPage('alerts')">🔔 Alerts</button>
+  </div>
+  <div class="user-badge">
+    <div class="avatar av-patient" id="userAvatar">P</div>
+    <span id="userName" style="font-size:13px">Patient</span>
+  </div>
+</nav>
+
+<!-- ══════════════ PAGE: PATIENT ══════════════ -->
+<div class="page active" id="page-patient">
+  <div class="container">
+
+    <div class="hero">
+      <h1>Your Medicine<br><span>Dashboard</span></h1>
+      <p>Track every dose. Stay healthy. Your family and doctor are watching over you.</p>
+    </div>
+
+    <div id="overdoseAlert" class="alert-banner danger">
+      ⚠️ <strong>Overdose Warning:</strong>&nbsp;<span id="overdoseMsg"></span>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card good">
+        <div class="stat-num" id="statTaken">0</div>
+        <div class="stat-label">Taken Today</div>
+      </div>
+      <div class="stat-card warn">
+        <div class="stat-num" id="statPending">0</div>
+        <div class="stat-label">Pending</div>
+      </div>
+      <div class="stat-card bad">
+        <div class="stat-num" id="statMissed">0</div>
+        <div class="stat-label">Missed</div>
+      </div>
+    </div>
+
+    <!-- Medicine list -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">💊</span> Today's Medicines</div>
+        <button class="btn-primary" onclick="document.getElementById('addSection').scrollIntoView({behavior:'smooth'})">+ Add Medicine</button>
+      </div>
+      <div class="med-list" id="medList">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <!-- Add Medicine -->
+    <div class="card" id="addSection">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">➕</span> Add New Medicine</div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Medicine Name</label>
+          <input type="text" id="medName" placeholder="e.g. Metformin">
+        </div>
+        <div class="form-group">
+          <label>Dosage</label>
+          <input type="text" id="medDosage" placeholder="e.g. 500mg">
+        </div>
+        <div class="form-group">
+          <label>Time of Day</label>
+          <input type="time" id="medTime" value="08:00">
+        </div>
+        <div class="form-group">
+          <label>Max Daily Tablets</label>
+          <input type="number" id="medMax" min="1" max="20" value="4" placeholder="4">
+        </div>
+        <div class="form-group">
+          <label>Frequency</label>
+          <select id="medFreq">
+            <option>Once daily</option>
+            <option>Twice daily</option>
+            <option>Three times daily</option>
+            <option>As needed</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="medCat">
+            <option>💊 Tablet</option>
+            <option>💉 Injection</option>
+            <option>🧴 Syrup</option>
+            <option>🫁 Inhaler</option>
+            <option>💧 Drops</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:16px">
+        <button class="btn-primary" onclick="addMedicine()">Add to Schedule</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════ PAGE: PORTAL ══════════════ -->
+<div class="page" id="page-portal">
+  <div class="container">
+
+    <div class="hero" style="padding-top:24px">
+      <h1>Doctor &<br><span>Family Portal</span></h1>
+      <p>Monitor patient medicine compliance in real time.</p>
+    </div>
+
+    <div id="portalOverdosePanel" class="overdose-panel" style="display:none">
+      <h4>🚨 Overdose Alert Active</h4>
+      <div id="portalOverdoseList"></div>
+    </div>
+
+    <div class="portal-header">
+      <div style="font-size:32px">👤</div>
+      <div>
+        <h3 id="portalPatientName">Patient: John Doe</h3>
+        <p>Last updated: <span id="portalLastUpdate">just now</span> &nbsp;·&nbsp; Monitoring as: <span id="portalRole" style="color:var(--green)">Doctor</span></p>
+      </div>
+      <div style="margin-left:auto; display:flex; gap:8px">
+        <button class="btn-primary" onclick="refreshPortal()" style="font-size:13px;padding:8px 14px">↻ Refresh</button>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card good">
+        <div class="stat-num" id="pStatTaken">0</div>
+        <div class="stat-label">Taken Today</div>
+      </div>
+      <div class="stat-card warn">
+        <div class="stat-num" id="pStatPending">0</div>
+        <div class="stat-label">Pending</div>
+      </div>
+      <div class="stat-card bad">
+        <div class="stat-num" id="pStatOverdue">0</div>
+        <div class="stat-label">Overdue / Missed</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">📋</span> Medicine Compliance Table</div>
+      </div>
+      <table class="portal-table" id="portalTable">
+        <thead>
+          <tr>
+            <th>Medicine</th>
+            <th>Dosage</th>
+            <th>Scheduled</th>
+            <th>Taken Count</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="portalTableBody"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">🔔</span> Recent Alerts for Doctor/Family</div>
+      </div>
+      <div id="portalAlerts">
+        <p style="color:var(--muted);font-size:14px">No alerts yet. Alerts will appear here when medicines are taken, missed, or overdose is detected.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════ PAGE: SCHEDULE ══════════════ -->
+<div class="page" id="page-schedule">
+  <div class="container">
+
+    <div class="hero" style="padding-top:24px">
+      <h1>Medicine<br><span>Schedule</span></h1>
+      <p>Your daily timeline at a glance.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">📅</span> Today's Timeline</div>
+        <div style="font-size:13px;color:var(--muted)" id="scheduleDate"></div>
+      </div>
+      <div class="timeline" id="scheduleTimeline"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">⏰</span> Alarm Settings</div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-size:14px;font-weight:500">Medicine Alarms</div>
+            <div style="font-size:12px;color:var(--muted)">Sound alarm 5 minutes before each dose</div>
+          </div>
+          <label style="position:relative;display:inline-block;width:48px;height:26px;cursor:pointer">
+            <input type="checkbox" id="alarmToggle" checked style="opacity:0;width:0;height:0" onchange="toggleAlarms()">
+            <span id="alarmSlider" style="position:absolute;inset:0;border-radius:13px;background:var(--accent);transition:0.2s;box-shadow:0 0 12px var(--accent-glow)">
+              <span style="position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:0.2s;transform:translateX(22px)"></span>
+            </span>
+          </label>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border)">
+          <div>
+            <div style="font-size:14px;font-weight:500">Overdose Notifications</div>
+            <div style="font-size:12px;color:var(--muted)">Alert doctor & family when limit exceeded</div>
+          </div>
+          <label style="position:relative;display:inline-block;width:48px;height:26px;cursor:pointer">
+            <input type="checkbox" id="overdoseToggle" checked style="opacity:0;width:0;height:0">
+            <span style="position:absolute;inset:0;border-radius:13px;background:var(--accent);box-shadow:0 0 12px var(--accent-glow)">
+              <span style="position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transform:translateX(22px)"></span>
+            </span>
+          </label>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between; padding:12px 0">
+          <div>
+            <div style="font-size:14px;font-weight:500">Snooze Duration</div>
+            <div style="font-size:12px;color:var(--muted)">How long to wait before re-alarming</div>
+          </div>
+          <select style="width:120px">
+            <option>5 minutes</option>
+            <option>10 minutes</option>
+            <option selected>15 minutes</option>
+            <option>30 minutes</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:16px">
+        <button class="btn-primary" onclick="testAlarm()">🔔 Test Alarm Sound</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════ PAGE: ALERTS ══════════════ -->
+<div class="page" id="page-alerts">
+  <div class="container">
+
+    <div class="hero" style="padding-top:24px">
+      <h1>Alert<br><span>History</span></h1>
+      <p>Full log of all notifications and events.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">📜</span> Event Log</div>
+        <button class="btn-danger" onclick="clearLog()">Clear Log</button>
+      </div>
+      <div id="alertLog">
+        <p style="color:var(--muted);font-size:14px">No events yet.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════ ALARM MODAL ══════════════ -->
+<div class="modal-overlay" id="alarmModal">
+  <div class="modal">
+    <div class="alarm-ring" id="alarmRingIcon">⏰</div>
+    <h2 id="alarmTitle">Time to take your medicine!</h2>
+    <p id="alarmBody">It's time for your scheduled dose.</p>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="dismissAlarm()">✓ Taken</button>
+      <button class="btn-danger" onclick="snoozeAlarm()" style="padding:10px 20px;border-radius:8px;font-size:14px">💤 Snooze</button>
+    </div>
+  </div>
+</div>
+
+<!-- OVERDOSE MODAL -->
+<div class="modal-overlay" id="overdoseModal">
+  <div class="modal danger-modal">
+    <div class="alarm-ring danger-ring">🚨</div>
+    <h2 style="color:var(--red)">Overdose Alert!</h2>
+    <p id="overdoseModalMsg">The patient has taken more tablets than the daily limit. Doctor and family have been notified.</p>
+    <div class="modal-actions">
+      <button onclick="document.getElementById('overdoseModal').classList.remove('show')" class="btn-primary" style="background:var(--red);box-shadow:0 0 18px var(--red-glow)">Acknowledge</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ SCRIPT ══════════════ -->
+<script>
+// ── STATE ──
+let medicines = [
+  { id:1, name:'Metformin',   dosage:'500mg', time:'08:00', maxDaily:4, freq:'Twice daily', cat:'💊', takenCount:0, taken:false },
+  { id:2, name:'Lisinopril',  dosage:'10mg',  time:'09:00', maxDaily:2, freq:'Once daily',  cat:'💊', takenCount:0, taken:false },
+  { id:3, name:'Vitamin D',   dosage:'1000IU',time:'12:00', maxDaily:1, freq:'Once daily',  cat:'💊', takenCount:0, taken:false },
+];
+let alertLog = [];
+let nextId = 4;
+let alarmEnabled = true;
+let currentAlarmMed = null;
+let audioCtx = null;
+
+// ── AUDIO ──
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playAlarmSound(isOverdose = false) {
+  try {
+    const ctx = getAudioCtx();
+    const notes = isOverdose
+      ? [880, 660, 880, 660, 880]
+      : [523, 659, 784, 659, 784];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = isOverdose ? 'sawtooth' : 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.25);
+      gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + i * 0.25 + 0.05);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + i * 0.25 + 0.22);
+      osc.start(ctx.currentTime + i * 0.25);
+      osc.stop(ctx.currentTime + i * 0.25 + 0.25);
+    });
+  } catch(e) {}
+}
+
+// ── PAGE SWITCHING ──
+function switchPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  const tabs = document.querySelectorAll('.nav-tab');
+  const idx = ['patient','portal','schedule','alerts'].indexOf(page);
+  if (tabs[idx]) tabs[idx].classList.add('active');
+  if (page === 'portal') refreshPortal();
+  if (page === 'schedule') renderSchedule();
+  if (page === 'alerts') renderAlertLog();
+}
+
+// ── RENDER MEDICINE LIST ──
+function renderMedList() {
+  const list = document.getElementById('medList');
+  if (medicines.length === 0) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:14px;text-align:center;padding:20px">No medicines added yet. Add one below!</p>';
+    return;
+  }
+  list.innerHTML = medicines.map(m => {
+    const isOverdose = m.takenCount >= m.maxDaily;
+    const cls = m.taken ? 'taken' : (isOverdose ? 'overdue' : '');
+    return `
+    <div class="med-item ${cls}" id="med-${m.id}">
+      <div class="med-pill-icon">${m.cat.split(' ')[0]}</div>
+      <div class="med-info">
+        <div class="med-name">${m.name}</div>
+        <div class="med-meta">${m.dosage} · ${m.freq} · ⏰ ${m.time} · Max ${m.maxDaily}/day</div>
+      </div>
+      <div class="med-count">
+        <div class="count-num" style="color:${m.takenCount >= m.maxDaily ? 'var(--red)' : m.takenCount > 0 ? 'var(--green)' : 'var(--muted)'}">${m.takenCount}</div>
+        <div class="count-label">taken</div>
+      </div>
+      <button class="take-btn ${m.taken ? 'done' : 'pending'}" onclick="takeMedicine(${m.id})" ${m.taken ? 'disabled' : ''}>
+        ${m.taken ? '✓ Taken' : 'Take Now'}
+      </button>
+      <button class="btn-danger" onclick="removeMedicine(${m.id})" style="margin-left:6px">✕</button>
+    </div>`;
+  }).join('');
+  updateStats();
+}
+
+// ── TAKE MEDICINE ──
+function takeMedicine(id) {
+  const med = medicines.find(m => m.id === id);
+  if (!med) return;
+  med.takenCount++;
+  med.taken = true;
+
+  const now = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  addLog('green', `✅ ${med.name} (${med.dosage}) taken at ${now}`);
+
+  // overdose check — warn at > maxDaily
+  if (med.takenCount > med.maxDaily) {
+    triggerOverdoseAlert(med);
+  }
+
+  renderMedList();
+  updatePortalIfOpen();
+}
+
+function triggerOverdoseAlert(med) {
+  const msg = `${med.name}: taken ${med.takenCount} tablets — limit is ${med.maxDaily}/day.`;
+  document.getElementById('overdoseMsg').textContent = msg;
+  document.getElementById('overdoseAlert').classList.add('show');
+  document.getElementById('overdoseModalMsg').textContent =
+    `${med.name} has been taken ${med.takenCount} times today. The maximum is ${med.maxDaily} tablets. Doctor and family notified!`;
+  document.getElementById('overdoseModal').classList.add('show');
+  playAlarmSound(true);
+  addLog('red', `🚨 OVERDOSE ALERT: ${msg} — Doctor & family notified!`);
+}
+
+// ── ADD MEDICINE ──
+function addMedicine() {
+  const name = document.getElementById('medName').value.trim();
+  const dosage = document.getElementById('medDosage').value.trim();
+  const time = document.getElementById('medTime').value;
+  const maxDaily = parseInt(document.getElementById('medMax').value) || 4;
+  const freq = document.getElementById('medFreq').value;
+  const cat = document.getElementById('medCat').value;
+
+  if (!name) { alert('Please enter a medicine name.'); return; }
+
+  medicines.push({ id: nextId++, name, dosage, time, maxDaily, freq, cat, takenCount:0, taken:false });
+  addLog('blue', `💊 ${name} (${dosage}) added to schedule at ${time}`);
+  renderMedList();
+  renderSchedule();
+
+  document.getElementById('medName').value = '';
+  document.getElementById('medDosage').value = '';
+}
+
+// ── REMOVE ──
+function removeMedicine(id) {
+  medicines = medicines.filter(m => m.id !== id);
+  renderMedList();
+  renderSchedule();
+}
+
+// ── STATS ──
+function updateStats() {
+  const taken = medicines.filter(m => m.takenCount > 0).length;
+  const pending = medicines.filter(m => !m.taken).length;
+  const missed = medicines.filter(m => {
+    if (m.taken) return false;
+    const [h, min] = m.time.split(':').map(Number);
+    const now = new Date();
+    return now.getHours() > h || (now.getHours() === h && now.getMinutes() > min + 30);
+  }).length;
+  document.getElementById('statTaken').textContent = taken;
+  document.getElementById('statPending').textContent = pending;
+  document.getElementById('statMissed').textContent = missed;
+}
+
+// ── PORTAL ──
+function refreshPortal() {
+  const taken = medicines.filter(m => m.takenCount > 0).length;
+  const pending = medicines.filter(m => !m.taken).length;
+  const now = new Date();
+  const overdue = medicines.filter(m => {
+    if (m.taken) return false;
+    const [h, min] = m.time.split(':').map(Number);
+    return now.getHours() > h || (now.getHours() === h && now.getMinutes() > min + 15);
+  }).length;
+
+  document.getElementById('pStatTaken').textContent = taken;
+  document.getElementById('pStatPending').textContent = pending;
+  document.getElementById('pStatOverdue').textContent = overdue;
+  document.getElementById('portalLastUpdate').textContent = now.toLocaleTimeString();
+
+  // Overdose panel
+  const overdoseMeds = medicines.filter(m => m.takenCount > m.maxDaily);
+  const panel = document.getElementById('portalOverdosePanel');
+  if (overdoseMeds.length > 0) {
+    panel.style.display = 'block';
+    document.getElementById('portalOverdoseList').innerHTML = overdoseMeds.map(m =>
+      `<div style="font-size:13px;color:var(--muted);margin-top:4px">⚠️ <b>${m.name}</b>: taken <b style="color:var(--red)">${m.takenCount}</b> of max <b>${m.maxDaily}</b></div>`
+    ).join('');
+  } else {
+    panel.style.display = 'none';
+  }
+
+  // Table
+  const tbody = document.getElementById('portalTableBody');
+  tbody.innerHTML = medicines.map(m => {
+    const isOverdose = m.takenCount > m.maxDaily;
+    const isOverdue = (() => {
+      if (m.taken) return false;
+      const [h, min] = m.time.split(':').map(Number);
+      return now.getHours() > h || (now.getHours() === h && now.getMinutes() > min + 15);
+    })();
+    let badge, status;
+    if (isOverdose)       { badge = 'badge-overdue'; status = '🚨 Overdose'; }
+    else if (m.taken)     { badge = 'badge-taken';   status = '✅ Taken'; }
+    else if (isOverdue)   { badge = 'badge-overdue'; status = '⚠️ Overdue'; }
+    else                  { badge = 'badge-pending';  status = '🕐 Pending'; }
+    return `
+    <tr>
+      <td><b>${m.name}</b></td>
+      <td style="color:var(--muted)">${m.dosage}</td>
+      <td style="color:var(--muted)">${m.time}</td>
+      <td><span style="font-family:var(--font-head);font-size:18px;font-weight:800;color:${isOverdose?'var(--red)':m.takenCount>0?'var(--green)':'var(--muted)'}">${m.takenCount}</span> / ${m.maxDaily}</td>
+      <td><span class="status-badge ${badge}">${status}</span></td>
+      <td><button class="btn-danger" onclick="portalReset(${m.id})" style="font-size:11px;padding:4px 10px">Reset</button></td>
+    </tr>`;
+  }).join('');
+
+  // Portal alerts
+  const pa = document.getElementById('portalAlerts');
+  const alerts = alertLog.slice(-8).reverse();
+  pa.innerHTML = alerts.length === 0
+    ? '<p style="color:var(--muted);font-size:14px">No alerts yet.</p>'
+    : alerts.map(a => `
+      <div class="notif-item">
+        <div class="notif-dot ${a.color}"></div>
+        <div>
+          <div class="notif-text">${a.text}</div>
+          <div class="notif-time">${a.time}</div>
+        </div>
+      </div>`).join('');
+}
+
+function portalReset(id) {
+  const med = medicines.find(m => m.id === id);
+  if (med) { med.takenCount = 0; med.taken = false; addLog('blue', `↺ ${med.name} count reset by portal`); refreshPortal(); renderMedList(); }
+}
+
+function updatePortalIfOpen() {
+  if (document.getElementById('page-portal').classList.contains('active')) refreshPortal();
+}
+
+// ── SCHEDULE ──
+function renderSchedule() {
+  document.getElementById('scheduleDate').textContent = new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+  const sorted = [...medicines].sort((a,b) => a.time.localeCompare(b.time));
+  const now = new Date();
+  document.getElementById('scheduleTimeline').innerHTML = sorted.map(m => {
+    const [h, min] = m.time.split(':').map(Number);
+    const medTime = new Date(); medTime.setHours(h, min, 0, 0);
+    let cls, emoji;
+    if (m.taken) { cls = 'done'; emoji = '✓'; }
+    else if (now > medTime) { cls = 'missed'; emoji = '!'; }
+    else if (Math.abs(now - medTime) < 30 * 60000) { cls = 'active'; emoji = '●'; }
+    else { cls = ''; emoji = '○'; }
+    return `
+    <div class="tl-item">
+      <div class="tl-dot ${cls}">${emoji}</div>
+      <div class="tl-line"></div>
+      <div class="tl-content">
+        <div class="tl-time">${m.time}</div>
+        <div class="tl-med">${m.cat.split(' ')[0]} ${m.name} — ${m.dosage}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── ALARM ──
+function showAlarm(med) {
+  currentAlarmMed = med;
+  document.getElementById('alarmTitle').textContent = `Time for ${med.name}!`;
+  document.getElementById('alarmBody').textContent = `Take your ${med.dosage} dose of ${med.name} (${med.freq}).`;
+  document.getElementById('alarmModal').classList.add('show');
+  if (alarmEnabled) playAlarmSound(false);
+  addLog('blue', `⏰ Alarm triggered for ${med.name} at ${new Date().toLocaleTimeString()}`);
+}
+
+function dismissAlarm() {
+  document.getElementById('alarmModal').classList.remove('show');
+  if (currentAlarmMed) takeMedicine(currentAlarmMed.id);
+  currentAlarmMed = null;
+}
+
+function snoozeAlarm() {
+  document.getElementById('alarmModal').classList.remove('show');
+  addLog('amber', `💤 Alarm snoozed for ${currentAlarmMed ? currentAlarmMed.name : 'medicine'}`);
+  setTimeout(() => { if (currentAlarmMed) showAlarm(currentAlarmMed); }, 15 * 60000);
+}
+
+function testAlarm() { playAlarmSound(false); addLog('blue', '🔔 Alarm tested'); }
+
+function toggleAlarms() {
+  alarmEnabled = document.getElementById('alarmToggle').checked;
+  const sl = document.getElementById('alarmSlider');
+  sl.style.background = alarmEnabled ? 'var(--accent)' : '#555';
+}
+
+// ── LOG ──
+function addLog(color, text) {
+  alertLog.push({ color, text, time: new Date().toLocaleTimeString() });
+  if (document.getElementById('page-alerts').classList.contains('active')) renderAlertLog();
+}
+
+function renderAlertLog() {
+  const el = document.getElementById('alertLog');
+  if (alertLog.length === 0) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:14px">No events yet.</p>';
+    return;
+  }
+  el.innerHTML = [...alertLog].reverse().map(a => `
+    <div class="notif-item">
+      <div class="notif-dot ${a.color}"></div>
+      <div>
+        <div class="notif-text">${a.text}</div>
+        <div class="notif-time">${a.time}</div>
+      </div>
+    </div>`).join('');
+}
+
+function clearLog() { alertLog = []; renderAlertLog(); }
+
+// ── CHECK ALARMS every 30s ──
+function checkAlarms() {
+  if (!alarmEnabled) return;
+  const now = new Date();
+  medicines.forEach(m => {
+    if (m.taken) return;
+    const [h, min] = m.time.split(':').map(Number);
+    if (now.getHours() === h && now.getMinutes() === min) {
+      showAlarm(m);
+    }
+  });
+}
+
+// ── INIT ──
+renderMedList();
+renderSchedule();
+addLog('blue', '🚀 MediCare session started');
+setInterval(checkAlarms, 30000);
+setInterval(() => {
+  if (document.getElementById('page-portal').classList.contains('active')) refreshPortal();
+  updateStats();
+}, 10000);
+</script>
+</body>
+</html>
